@@ -11,16 +11,6 @@ struct ContentView: View {
     var body: some View {
         TabView {
             JobListView()
-                .tabItem {
-                    Image(systemName: "list.bullet")
-                    Text("Jobs")
-                }
-            
-            SubmittedApplicationsView()
-                .tabItem {
-                    Image(systemName: "checkmark.circle")
-                    Text("Applications")
-                }
         }
     }
 }
