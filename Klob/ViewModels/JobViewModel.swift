@@ -8,8 +8,9 @@
 import Foundation
 
 @MainActor
-class JobViewModel: ObservableObject {
+class JobListViewModel: ObservableObject {
     @Published var jobs: [Job] = []
+    @Published var sentApplications: [Job] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -27,5 +28,11 @@ class JobViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    func applyForJob(_ job: Job) {
+        if !sentApplications.contains(where: { $0.id == job.id }) {
+            sentApplications.append(job)
+        }
     }
 }
