@@ -8,14 +8,16 @@
 import SwiftUI
 
 struct JobListView: View {
+    @StateObject private var viewModel = JobListViewModel()
+    
     var body: some View {
         TabView {
-            JobListingsView()
+            JobListingsView(viewModel: viewModel)
                 .tabItem {
-                    Label("Lowongan Kerja", systemImage: "person.crop.circle")
+                    Label("Lowongan Kerja", systemImage: "briefcase")
                 }
             
-            SentApplicationsView()
+            SentApplicationsView(viewModel: viewModel)
                 .tabItem {
                     Label("Lowongan Terkirim", systemImage: "paperplane")
                 }
@@ -24,79 +26,93 @@ struct JobListView: View {
 }
 
 struct JobListingsView: View {
-    @StateObject private var viewModel = JobViewModel()
+    @ObservedObject var viewModel: JobListViewModel
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Lowongan Pekerjaan")
-                .font(.headline)
-                .bold()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 8)
-            
-            if viewModel.jobs.isEmpty {
-                Text("Loading...")
-                    .foregroundColor(.gray)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(viewModel.jobs) { job in
-                            JobCard(
-                                title: job.positionName,
-                                company: job.corporateName,
-                                jobType: job.status.rawValue,
-                                postedDaysAgo: job.postedDaysAgo,
-                                companyLogoURL: job.corporateLogo,
-                                salaryRange: job.salaryRange
-                            )
+        NavigationView {
+            VStack(spacing: 16) {
+                if viewModel.jobs.isEmpty {
+                    Text("Loading...")
+                        .foregroundColor(.gray)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.jobs) { job in
+                                JobCard(
+                                    title: job.positionName,
+                                    company: job.corporateName,
+                                    jobType: job.status.rawValue,
+                                    postedDaysAgo: job.postedDaysAgo,
+                                    companyLogoURL: job.corporateLogo,
+                                    salaryRange: job.salaryRange,
+                                    isApplied: viewModel.sentApplications.contains(where: { $0.id == job.id }),
+                                    showApplyButton: true,
+                                    onApply: {
+                                        viewModel.applyForJob(job)
+                                    }
+                                )
+                            }
                         }
+                        .padding(.vertical)
                     }
-                    .padding(.vertical)
                 }
             }
-        }
-        .padding(.horizontal)
-        .onAppear {
-            Task {
-                await viewModel.fetchJobs()
+            .padding(.horizontal)
+            .onAppear {
+                Task {
+                    await viewModel.fetchJobs()
+                }
             }
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(leading: navbarIcon)
+            .navigationTitle("Lowongan Pekerjaan")
+        }
+    }
+    
+    private var navbarIcon: some View {
+        HStack {
+            Image("klobnavbar")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 30, height: 30)
         }
     }
 }
 
 struct SentApplicationsView: View {
-    @State private var sentApplications: [Job] = []
+    @ObservedObject var viewModel: JobListViewModel
     
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Lamaran Terkirim!")
-                .font(.headline)
-                .bold()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 8)
-            
-            if sentApplications.isEmpty {
-                Text("Belum ada lowongan terkirim")
-                    .foregroundColor(.gray)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(sentApplications) { job in
-                            JobCard(
-                                title: job.positionName,
-                                company: job.corporateName,
-                                jobType: job.status.rawValue,
-                                postedDaysAgo: job.postedDaysAgo,
-                                companyLogoURL: job.corporateLogo,
-                                salaryRange: job.salaryRange
-                            )
+        NavigationView {
+            VStack(spacing: 16) {
+                if viewModel.sentApplications.isEmpty {
+                    Text("Belum ada lowongan terkirim")
+                        .foregroundColor(.gray)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.sentApplications) { job in
+                                JobCard(
+                                    title: job.positionName,
+                                    company: job.corporateName,
+                                    jobType: job.status.rawValue,
+                                    postedDaysAgo: job.postedDaysAgo,
+                                    companyLogoURL: job.corporateLogo,
+                                    salaryRange: job.salaryRange,
+                                    isApplied: true,
+                                    showApplyButton: false,
+                                    onApply: {}
+                                )
+                            }
                         }
+                        .padding(.vertical)
                     }
-                    .padding(.vertical)
                 }
             }
+            .padding(.horizontal)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Lamaran Terkirim!")
         }
-        .padding(.horizontal)
     }
 }
 
@@ -107,8 +123,9 @@ struct JobCard: View {
     let postedDaysAgo: String
     let companyLogoURL: String
     let salaryRange: String?
-    
-    @State private var isApplied = false
+    let isApplied: Bool
+    let showApplyButton: Bool
+    let onApply: () -> Void
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -161,21 +178,19 @@ struct JobCard: View {
                             .font(.caption)
                             .foregroundColor(.gray)
                         Spacer()
-                        Button(action: {
-                            if !isApplied {
-                                isApplied = true
+                        if showApplyButton {
+                            Button(action: onApply) {
+                                Text(isApplied ? "LAMARAN TERKIRIM" : "LAMAR")
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(isApplied ? Color(hex: "#CCCCCC") : Color(hex: "#273569"))
+                                    .cornerRadius(8)
                             }
-                        }) {
-                            Text(isApplied ? "LAMARAN TERKIRIM" : "LAMAR")
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(isApplied ? Color(hex: "#CCCCCC") : Color(hex: "#273569"))
-                                .cornerRadius(16)
+                            .disabled(isApplied)
                         }
-                        .disabled(isApplied)
                     }
                 }
             }
