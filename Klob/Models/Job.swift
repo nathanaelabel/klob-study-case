@@ -49,11 +49,15 @@ class Job: Codable, Identifiable {
         }
         return descriptions
     }
-
+    
     /// Computes the salary range as a string.
     var salaryRange: String? {
         if salaryFrom > 0 && salaryTo > 0 {
             return "\(formatCurrency(salaryFrom)) - \(formatCurrency(salaryTo))"
+        } else if salaryFrom > 0 {
+            return "From \(formatCurrency(salaryFrom))"
+        } else if salaryTo > 0 {
+            return "Up to \(formatCurrency(salaryTo))"
         }
         return nil
     }
@@ -76,16 +80,16 @@ class Job: Codable, Identifiable {
         let components = calendar.dateComponents([.year, .month, .day], from: date, to: Date())
 
         if let years = components.year, years > 0 {
-            return years == 1 ? "1 year ago" : "\(years) years ago"
+            return years == 1 ? "a year ago" : "\(years) years ago"
         }
 
         if let months = components.month, months > 0 {
-            return months == 1 ? "1 month ago" : "\(months) months ago"
+            return months == 1 ? "a month ago" : "\(months) months ago"
         }
 
         if let days = components.day, days > 0 {
             if days == 1 {
-                return "1 day ago"
+                return "a day ago"
             } else {
                 return "\(days) days ago"
             }
