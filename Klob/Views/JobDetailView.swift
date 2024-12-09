@@ -24,7 +24,7 @@ struct JobDetailView: View {
                     .foregroundColor(.secondary)
                 
                 // Job Status
-                Text(job.status)
+                Text(job.status.rawValue)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 
