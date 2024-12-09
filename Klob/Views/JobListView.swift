@@ -8,72 +8,199 @@
 import SwiftUI
 
 struct JobListView: View {
-    @StateObject private var viewModel = JobViewModel()
-
     var body: some View {
-        NavigationView {
-            Group {
-                if viewModel.isLoading {
-                    ProgressView("Loading Jobs...")
-                } else if let errorMessage = viewModel.errorMessage {
-                    VStack {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .padding()
-                        Button(action: {
-                            Task {
-                                await viewModel.fetchJobs()
-                            }
-                        }) {
-                            Text("Retry")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                } else {
-                    List(viewModel.jobs) { job in
-                        NavigationLink(destination: JobDetailView(job: job)) {
-                            JobCardView(job: job)
-                        }
-                    }
+        TabView {
+            JobListingsView()
+                .tabItem {
+                    Label("Lowongan Kerja", systemImage: "person.crop.circle")
                 }
-            }
-            .onAppear {
-                Task {
-                    await viewModel.fetchJobs()
+            
+            SentApplicationsView()
+                .tabItem {
+                    Label("Lowongan Terkirim", systemImage: "paperplane")
                 }
-            }
-            .navigationTitle("Lowongan Pekerjaan")
         }
     }
 }
 
-struct JobCardView: View {
-    let job: Job
-
+struct JobListingsView: View {
+    @StateObject private var viewModel = JobViewModel()
+    
     var body: some View {
-        HStack {
-            AsyncImage(url: URL(string: job.corporateLogo)) { image in
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-            } placeholder: {
-                ProgressView()
-            }
-
-            VStack(alignment: .leading) {
-                Text(job.positionName)
-                    .font(.headline)
-                Text(job.corporateName)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Text(job.status.rawValue)
-                    .font(.caption)
+        VStack(spacing: 16) {
+            // Title
+            Text("Lowongan Pekerjaan")
+                .font(.headline)
+                .bold()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 8)
+            
+            // Job Content
+            if viewModel.jobs.isEmpty {
+                Text("Loading jobs...")
                     .foregroundColor(.gray)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.jobs) { job in
+                            JobCard(
+                                title: job.positionName,
+                                company: job.corporateName,
+                                jobType: job.status.rawValue,
+                                postedDaysAgo: job.postedDate ?? "Unknown",
+                                companyLogoURL: job.corporateLogo,
+                                salaryRange: "\(job.formatCurrency(job.salaryFrom)) - \(job.formatCurrency(job.salaryTo))"
+                            )
+                        }
+                    }
+                    .padding(.vertical)
+                }
             }
-            Spacer()
+        }
+        .padding(.horizontal)
+        .onAppear {
+            Task {
+                await viewModel.fetchJobs()
+            }
+        }
+    }
+}
+
+struct SentApplicationsView: View {
+    @State private var sentApplications: [Job] = []
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Lamaran Terkirim!")
+                .font(.headline)
+                .bold()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 8)
+            
+            if sentApplications.isEmpty {
+                Text("Belum ada lowongan terkirim")
+                    .foregroundColor(.gray)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(sentApplications) { job in
+                            JobCard(
+                                title: job.positionName,
+                                company: job.corporateName,
+                                jobType: job.status.rawValue,
+                                postedDaysAgo: job.postedDate ?? "Unknown",
+                                companyLogoURL: job.corporateLogo,
+                                salaryRange: "\(job.formatCurrency(job.salaryFrom)) - \(job.formatCurrency(job.salaryTo))"
+                            )
+                        }
+                    }
+                    .padding(.vertical)
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+}
+
+struct JobCard: View {
+    let title: String
+    let company: String
+    let jobType: String
+    let postedDaysAgo: String
+    let companyLogoURL: String
+    let salaryRange: String?
+    
+    @State private var isApplied = false
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack(alignment: .top, spacing: 8) {
+                AsyncImage(url: URL(string: companyLogoURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: 40, height: 40)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    case .failure:
+                        Image(systemName: "photo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.gray)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                    Text(company)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    HStack {
+                        Text(jobType)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        if let salaryRange = salaryRange {
+                            Text(salaryRange)
+                                .font(.footnote)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(hex: "#D9E7FF"))
+                                .cornerRadius(4)
+                        }
+                    }
+                    
+                    HStack {
+                        Text(postedDaysAgo)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Button(action: {
+                            if !isApplied {
+                                isApplied = true
+                            }
+                        }) {
+                            Text(isApplied ? "LAMARAN TERKIRIM" : "LAMAR")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(isApplied ? Color(hex: "#CCCCCC") : Color(hex: "#273569"))
+                                .cornerRadius(8)
+                        }
+                        .disabled(isApplied)
+                    }
+                }
+            }
         }
         .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
+    }
+}
+
+extension Color {
+    init(hex: String) {
+        let scanner = Scanner(string: hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted))
+        var rgbValue: UInt64 = 0
+        scanner.scanHexInt64(&rgbValue)
+        
+        let red = Double((rgbValue >> 16) & 0xFF) / 255.0
+        let green = Double((rgbValue >> 8) & 0xFF) / 255.0
+        let blue = Double(rgbValue & 0xFF) / 255.0
+        
+        self.init(red: red, green: green, blue: blue)
     }
 }
