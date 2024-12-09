@@ -29,7 +29,7 @@ class JobUsecase: ObservableObject {
             // Decode JSON response
             let decoder = JSONDecoder()
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let decodedResponse = try decoder.decode(JobList.self, from: data) // Decode to JobList (Array of Job)
+            let decodedResponse = try decoder.decode(JobList.self, from: data)
             return decodedResponse
         } catch {
             print("Error fetching data: \(error.localizedDescription)")
