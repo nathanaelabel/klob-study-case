@@ -28,16 +28,14 @@ struct JobListingsView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Title
             Text("Lowongan Pekerjaan")
                 .font(.headline)
                 .bold()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.bottom, 8)
             
-            // Job Content
             if viewModel.jobs.isEmpty {
-                Text("Loading jobs...")
+                Text("Loading...")
                     .foregroundColor(.gray)
             } else {
                 ScrollView {
@@ -47,9 +45,9 @@ struct JobListingsView: View {
                                 title: job.positionName,
                                 company: job.corporateName,
                                 jobType: job.status.rawValue,
-                                postedDaysAgo: job.postedDate ?? "Unknown",
+                                postedDaysAgo: job.postedDaysAgo,
                                 companyLogoURL: job.corporateLogo,
-                                salaryRange: "\(job.formatCurrency(job.salaryFrom)) - \(job.formatCurrency(job.salaryTo))"
+                                salaryRange: job.salaryRange
                             )
                         }
                     }
@@ -88,9 +86,9 @@ struct SentApplicationsView: View {
                                 title: job.positionName,
                                 company: job.corporateName,
                                 jobType: job.status.rawValue,
-                                postedDaysAgo: job.postedDate ?? "Unknown",
+                                postedDaysAgo: job.postedDaysAgo,
                                 companyLogoURL: job.corporateLogo,
-                                salaryRange: "\(job.formatCurrency(job.salaryFrom)) - \(job.formatCurrency(job.salaryTo))"
+                                salaryRange: job.salaryRange
                             )
                         }
                     }
@@ -142,12 +140,11 @@ struct JobCard: View {
                         .font(.headline)
                     Text(company)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .fontWeight(.bold)
                     
                     HStack {
                         Text(jobType)
                             .font(.footnote)
-                            .foregroundColor(.secondary)
                         Spacer()
                         if let salaryRange = salaryRange {
                             Text(salaryRange)
@@ -176,7 +173,7 @@ struct JobCard: View {
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                                 .background(isApplied ? Color(hex: "#CCCCCC") : Color(hex: "#273569"))
-                                .cornerRadius(8)
+                                .cornerRadius(16)
                         }
                         .disabled(isApplied)
                     }
