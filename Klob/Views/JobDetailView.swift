@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// TODO: future plan, add detail view for each job.
 struct JobDetailView: View {
     let job: Job
 
