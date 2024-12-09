@@ -61,7 +61,7 @@ struct JobDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
     
-    // Helper Functions
+    // TODO: buat pisah file tersendiri seperti helper or extension
     func cleanHTMLString(_ html: String) -> String {
         guard let data = html.data(using: .utf8) else { return html }
         if let attributedString = try? NSAttributedString(
@@ -74,6 +74,7 @@ struct JobDetailView: View {
         return html
     }
     
+    // TODO: move to model, disini khusus untuk UI aja
     func formatCurrency(_ amount: Int) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
